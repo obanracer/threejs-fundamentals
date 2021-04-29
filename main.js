@@ -1,8 +1,17 @@
 import * as THREE from 'https://threejs.org/build/three.module.js';
 import {OrbitControls} from 'https://threejs.org/examples/jsm/controls/OrbitControls.js';
 
+const TESTS = 3;
+let testCounter = 0;
+
 // using an IIFE
 (() => {
+    document.addEventListener("keydown", e => { 
+        if (e.code == "Space") { 
+            testCounter = testCounter + 1 < TESTS ? testCounter + 1 : 0;
+        }
+    });
+
     const canvas = document.querySelector('#c');
 
     const FOV = 75;
@@ -23,16 +32,24 @@ import {OrbitControls} from 'https://threejs.org/examples/jsm/controls/OrbitCont
     controls.target.set(0, 0, 0);
     controls.update();
 
-    const light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(-2, 3, 7);
-    light.intensity = 0.8;
-    scene.add(light);
 
+    const textureLoader = new THREE.TextureLoader();
+    const floorTexture = textureLoader.load("res/floor.png");
+    floorTexture.wrapS = THREE.RepeatWrapping;
+    floorTexture.wrapT = THREE.RepeatWrapping;
+    floorTexture.magFilter = THREE.NearestFilter;
+    floorTexture.repeat.set(20, 20);
+    
     const plane = new THREE.Mesh(
-        new THREE.PlaneGeometry(10, 10, 1, 1),
-        new THREE.MeshPhongMaterial({ color: 0xeeeeee, side: THREE.DoubleSide, shininess: 100 })
+        new THREE.PlaneGeometry(20, 20, 1, 1),
+        new THREE.MeshPhongMaterial({ 
+            // color: 0xeeeeee,
+            map: floorTexture, 
+            side: THREE.DoubleSide, 
+            shininess: 100 
+        })
     );
-    plane.rotation.x = Math.PI / 2;
+    plane.rotation.x = - Math.PI / 2;
     scene.add(plane);
 
     const boxWidth = 1;
@@ -46,9 +63,25 @@ import {OrbitControls} from 'https://threejs.org/examples/jsm/controls/OrbitCont
     ];
     cubes.forEach( e => scene.add(e) );
     
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.3);
+    dirLight.position.set(-5, 5, 7);
+    dirLight.intensity = 1;
+    scene.add(dirLight);
+    const dirLightHelper = new THREE.DirectionalLightHelper(dirLight);
+    scene.add(dirLightHelper);
+
+    const pointLight = new THREE.PointLight(0xffffff,0.5);
+    pointLight.position.set(5, 2, 0);
+    scene.add(pointLight);
+    const pointLightHelper = new THREE.PointLightHelper(pointLight);
+    scene.add(pointLightHelper);
+
+
     const axes = new THREE.AxesHelper();
     axes.material.depthTest = false;
     scene.add(axes);
+
 
     function makeCubeInstace(geometry, color, x) {
         const boxMaterial = new THREE.MeshPhongMaterial({ color: color, shininess: 50 });
@@ -62,7 +95,6 @@ import {OrbitControls} from 'https://threejs.org/examples/jsm/controls/OrbitCont
         return cube;
     }
     
-
     window.addEventListener("resize", e => {
         // if (canvas.width !== canvas.clientWidth ||
         //     canvas.height !== canvas.clientHeight) {
@@ -80,6 +112,9 @@ import {OrbitControls} from 'https://threejs.org/examples/jsm/controls/OrbitCont
         cubes[2].rotation.z = time * 2;
 
         cubes[1].position.y = 2 + Math.sin(time);
+
+        pointLight.position.x = Math.sin(time / 2) * 4;
+        pointLight.position.z = Math.cos(time / 2) * 4;
         
         renderer.render(scene, camera);
         requestAnimationFrame(animate);

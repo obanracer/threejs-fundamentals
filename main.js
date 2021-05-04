@@ -1,17 +1,32 @@
 import * as THREE from 'https://threejs.org/build/three.module.js';
 import {OrbitControls} from 'https://threejs.org/examples/jsm/controls/OrbitControls.js';
 
-const TESTS = 3;
+import {BasicTest} from './tests/basic_test.js'
+
+let TESTS = [];
 let testCounter = 0;
+
+document.addEventListener("keydown", e => { 
+    if (e.code == "Space" && !e.repeat) { 
+        testCounter = testCounter + 1 < TESTS.length ? testCounter + 1 : 0;
+        console.log(e.code);
+        console.log(testCounter);
+    }
+});
+
+
+(() => {
+    TESTS.push(BasicTest);
+
+    TESTS.forEach(t => {
+        t.init();
+        t.update();
+    });
+})();
+
 
 // using an IIFE
 (() => {
-    document.addEventListener("keydown", e => { 
-        if (e.code == "Space") { 
-            testCounter = testCounter + 1 < TESTS ? testCounter + 1 : 0;
-        }
-    });
-
     const canvas = document.querySelector('#c');
 
     const FOV = 75;

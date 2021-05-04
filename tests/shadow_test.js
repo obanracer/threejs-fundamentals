@@ -1,113 +1,211 @@
 import * as THREE from 'https://threejs.org/build/three.module.js';
-import {OrbitControls} from 'https://threejs.org/examples/jsm/controls/OrbitControls.js';
+import {PointerLockControls} from 'https://threejs.org/examples/jsm/controls/PointerLockControls.js';
 
 const runTest = function() {
+    const MOVE_SPEED = 5;
+    const MAX_SPEED = 20;
+    const FRICTION = 1;
+
     document.getElementById("test-name").innerText = "shadows test";
 
     const canvas = document.querySelector('#c');
 
-    const FOV = 75;
+    const FOV = 90;
     const ASPECT_RATIO = canvas.clientWidth / canvas.clientHeight;
     const NEAR = 0.1;
     const FAR = 100;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xff00000);
+    scene.background = new THREE.Color(0x55c0ff);
     
     const renderer = new THREE.WebGLRenderer({canvas});
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
 
     const camera = new THREE.PerspectiveCamera(FOV, ASPECT_RATIO, NEAR, FAR);
-    camera.position.set(0, 5, 5);
+    // camera.position.set(0, 0, 0);
+    scene.add(camera);
 
-    const controls = new OrbitControls(camera, canvas);
-    controls.target.set(0, 0, 0);
-    controls.update();
+    const controls = new PointerLockControls(camera, document.body);
+    canvas.addEventListener("click", () => { controls.lock(); });
+    controls.getObject().position.y = 3;
 
+    const axes = new THREE.AxesHelper();
+    scene.add(axes);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.33);
+    scene.add(ambientLight);
+
+    const torchlight = new THREE.SpotLight(0x00ff00);
+    torchlight.add(new THREE.SpotLightHelper(torchlight));
+    torchlight.angle = Math.PI / 8;
+    torchlight.decay = 2;
+    torchlight.distance = 250;
+    torchlight.penumbra = 0.3;
+    // torchlight.position.set(1, -1, 0.5); // cool effect
+    torchlight.position.set(0, 0, 0);
+    camera.add(torchlight);
+
+    const torchlightTarget = new THREE.Mesh(
+        new THREE.SphereGeometry(1, 4, 4),
+        new THREE.MeshBasicMaterial({ color: 0x0000ff, side: THREE.DoubleSide})
+    );
+    // torchlightTarget.position.set(-1, 1, -10); // cool effect
+    // torchlightTarget.position.set(0, 0, 0);
+    // torchlight.target = torchlightTarget;
+    // camera.add(torchlightTarget);
 
     const textureLoader = new THREE.TextureLoader();
-    const floorTexture = textureLoader.load("res/floor.png");
-    floorTexture.wrapS = THREE.RepeatWrapping;
-    floorTexture.wrapT = THREE.RepeatWrapping;
-    floorTexture.magFilter = THREE.NearestFilter;
-    floorTexture.repeat.set(5, 5);
-    
-    // const plane = new THREE.Mesh(
-    //     new THREE.PlaneGeometry(20, 20, 1, 1),
-    //     new THREE.MeshPhongMaterial({ 
-    //         // color: 0xeeeeee,
-    //         map: floorTexture, 
-    //         side: THREE.DoubleSide, 
-    //         shininess: 100 
-    //     })
-    // );
-    // plane.rotation.x = - Math.PI / 2;
-    // scene.add(plane);
-
-    // const boxWidth = 1;
-    // const boxHeight = 1;
-    // const boxDepth = 1;
-    // const boxGeometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
-    // const cubes = [
-    //     makeCubeInstace(boxGeometry, "red", -2),
-    //     makeCubeInstace(boxGeometry, "green", 0),
-    //     makeCubeInstace(boxGeometry, "blue", 2),
-    // ];
-    // cubes.forEach( e => scene.add(e) );
-    
-
-    // const dirLight = new THREE.DirectionalLight(0xffffff, 0.3);
-    // dirLight.position.set(-5, 5, 7);
-    // dirLight.intensity = 1;
-    // scene.add(dirLight);
-    // const dirLightHelper = new THREE.DirectionalLightHelper(dirLight);
-    // scene.add(dirLightHelper);
-
-    // const pointLight = new THREE.PointLight(0xffffff,0.5);
-    // pointLight.position.set(5, 2, 0);
-    // scene.add(pointLight);
-    // const pointLightHelper = new THREE.PointLightHelper(pointLight);
-    // scene.add(pointLightHelper);
-
-
-    // const axes = new THREE.AxesHelper();
-    // axes.material.depthTest = false;
-    // scene.add(axes);
-
-
-    // function makeCubeInstace(geometry, color, x) {
-    //     const boxMaterial = new THREE.MeshPhongMaterial({ color: color, shininess: 50 });
-    //     const cube = new THREE.Mesh(geometry, boxMaterial);
-    //     cube.position.x = x;
-    //     cube.position.y = 2;
+    const baseTexture = textureLoader.load("res/floor.png");
+    baseTexture.wrapS = THREE.RepeatWrapping;
+    baseTexture.wrapT = THREE.RepeatWrapping;
+    baseTexture.magFilter = THREE.NearestFilter;
+    baseTexture.repeat.set(10, 10);
         
-    //     cube.add(new THREE.AxesHelper());
-    //     cube.add(new THREE.GridHelper(2, 3));
 
-    //     return cube;
-    // }
+    let objects = [];
+
+    const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(20, 20),
+        new THREE.MeshPhongMaterial({ 
+            // color: 0xeeeeee,
+            map: baseTexture, 
+            side: THREE.DoubleSide, 
+            shininess: 100 
+        })
+    );
+    floor.rotation.x = - Math.PI / 2;
+    scene.add(floor);
+    objects.push(floor);
+
+    function createRoom() {
+        const geo = new THREE.PlaneGeometry(20, 20);
+        const mat = new THREE.MeshPhongMaterial({
+            map: baseTexture, 
+            side: THREE.DoubleSide, 
+            shininess: 30
+        });
+
+        const walls = [
+            new THREE.Mesh(geo, mat),
+            new THREE.Mesh(geo, mat),
+            new THREE.Mesh(geo, mat),
+            new THREE.Mesh(geo, mat)
+        ];
+
+        walls[0].position.setZ(-10);
+        walls[0].position.setY(10);
+
+        walls[1].position.setZ(10);
+        walls[1].position.setY(10);
+        walls[1].rotation.x = Math.PI;
+
+        walls[2].position.setX(10);
+        walls[2].position.setY(10);
+        walls[2].rotation.y = Math.PI / 2;
+        walls[2].rotation.x = Math.PI / 2;
+
+        walls[3].position.setX(-10);
+        walls[3].position.setY(10);
+        walls[3].rotation.y = Math.PI / 2;
+
+        scene.add(walls[0]);
+        scene.add(walls[1]);
+        scene.add(walls[2]);
+        scene.add(walls[3]);
+
+        objects.push(walls[0]);
+        objects.push(walls[1]);
+        objects.push(walls[2]);
+        objects.push(walls[3]);
+    }
+    createRoom();
+
     
-    // window.addEventListener("resize", e => {
-    //     // if (canvas.width !== canvas.clientWidth ||
-    //     //     canvas.height !== canvas.clientHeight) {
-    //         renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
-    //     // }
-    //     camera.aspect = canvas.clientWidth / canvas.clientHeight;
-    //     camera.updateProjectionMatrix();
-    // });
+    window.addEventListener("resize", e => {
+        // if (canvas.width !== canvas.clientWidth ||
+        //     canvas.height !== canvas.clientHeight) {
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+        // }
+        camera.aspect = canvas.clientWidth / canvas.clientHeight;
+        camera.updateProjectionMatrix();
+    });
 
+    let moveForwards = false;
+    let moveBackwards = false;
+    let moveLeft = false;
+    let moveRight = false;
+
+    window.addEventListener("keydown", e => {
+        if (e.code == "KeyA") moveLeft = true;
+        if (e.code == "KeyD") moveRight = true;
+        if (e.code == "KeyW") moveForwards = true;
+        if (e.code == "KeyS") moveBackwards = true;
+    });
+
+    window.addEventListener("keyup", e => {
+        if (e.code == "KeyA") moveLeft = false;
+        if (e.code == "KeyD") moveRight = false;
+        if (e.code == "KeyW") moveForwards = false;
+        if (e.code == "KeyS") moveBackwards = false;
+    });
+
+    let mouse = new THREE.Vector2();
+    let raycaster = new THREE.Raycaster();
+    let helper = new THREE.Mesh(
+        new THREE.SphereGeometry(0.25, 8, 8),
+        new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide})
+    );
+    scene.add(helper);
+    torchlight.target = helper;
+
+    window.addEventListener("mousemove", e => {
+        // console.log(e.clientX, e.clientY);
+        mouse.x = ( e.clientX / canvas.clientWidth ) * 2 - 1;
+        mouse.y = -( e.clientY / canvas.clientHeight ) * 2 + 1;
+    });
+
+    let lastTime = 0;
+    let velocity = new THREE.Vector3(0, 0, 0);
+    let moveDirection = new THREE.Vector3(0, 0, 0);
+    let aux = new THREE.Vector3(0, 0, 0);
     function animate(time) {
-        // time *= 0.001;
-        
-        // cubes[0].rotation.x = time * 2;
-        // cubes[1].rotation.y = time * 2;
-        // cubes[2].rotation.z = time * 2;
+        let delta = (time - lastTime) / 1000;
+        lastTime = time;
+        // ====================================================================
 
-        // cubes[1].position.y = 2 + Math.sin(time);
+        // MOVEMENT ===========================================================
+        if (moveLeft) moveDirection.x -= 1
+        if (moveRight) moveDirection.x += 1
+        if (moveForwards) moveDirection.z += 1;
+        if (moveBackwards) moveDirection.z -= 1;
+        moveDirection.normalize();
 
-        // pointLight.position.x = Math.cos(time / 2) * 4;
-        // pointLight.position.z = Math.sin(time / 2) * 4;
+        velocity.z = moveDirection.z * MOVE_SPEED;
+        velocity.x = moveDirection.x * MOVE_SPEED; 
         
+        controls.moveRight(velocity.x * delta);
+        controls.moveForward(velocity.z * delta);
+        
+        moveDirection.set(0, 0, 0);
+        velocity.set(0, 0, 0);
+        // ====================================================================
+
+        
+        // raycaster.setFromCamera(mouse, camera);
+        camera.getWorldDirection(aux);
+        raycaster.set(controls.getObject().position, aux);
+
+        // const intersects = raycaster.intersectObject(floor, false);
+        const intersects = raycaster.intersectObjects(objects, false);
+
+        if (intersects.length > 0) {
+            helper.position.copy(intersects[0].point);
+        } else {
+            helper.position.set(0, 0, 0);
+        }
+
+
+        // ====================================================================
         renderer.render(scene, camera);
         requestAnimationFrame(animate);
     }

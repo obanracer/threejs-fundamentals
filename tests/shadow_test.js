@@ -35,24 +35,24 @@ const runTest = function() {
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.33);
     scene.add(ambientLight);
 
-    const torchlight = new THREE.SpotLight(0x00ff00);
-    torchlight.add(new THREE.SpotLightHelper(torchlight));
-    torchlight.angle = Math.PI / 8;
-    torchlight.decay = 2;
-    torchlight.distance = 250;
-    torchlight.penumbra = 0.3;
-    // torchlight.position.set(1, -1, 0.5); // cool effect
-    torchlight.position.set(0, 0, 0);
-    camera.add(torchlight);
+    const flashLight = new THREE.SpotLight(0x00ff00);
+    flashLight.add(new THREE.SpotLightHelper(flashLight));
+    flashLight.angle = Math.PI / 8;
+    flashLight.decay = 2;
+    flashLight.distance = 250;
+    flashLight.penumbra = 0.3;
+    // flashLight.position.set(1, -1, 0.5); // cool effect
+    flashLight.position.set(0, 0, 0);
+    camera.add(flashLight);
 
-    const torchlightTarget = new THREE.Mesh(
+    const flashLightTarget = new THREE.Mesh(
         new THREE.SphereGeometry(1, 4, 4),
         new THREE.MeshBasicMaterial({ color: 0x0000ff, side: THREE.DoubleSide})
     );
-    // torchlightTarget.position.set(-1, 1, -10); // cool effect
-    // torchlightTarget.position.set(0, 0, 0);
-    // torchlight.target = torchlightTarget;
-    // camera.add(torchlightTarget);
+    // flashLightTarget.position.set(-1, 1, -10); // cool effect
+    // flashLightTarget.position.set(0, 0, 0);
+    // flashLight.target = flashLightTarget;
+    // camera.add(flashLightTarget);
 
     const textureLoader = new THREE.TextureLoader();
     const baseTexture = textureLoader.load("res/floor.png");
@@ -156,7 +156,7 @@ const runTest = function() {
         new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide})
     );
     scene.add(helper);
-    torchlight.target = helper;
+    flashLight.target = helper;
 
     window.addEventListener("mousemove", e => {
         // console.log(e.clientX, e.clientY);
